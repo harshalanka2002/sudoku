@@ -1,0 +1,207 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int N = 9;
+
+bool isSafe(int box[N][N], int row, int col, int num) {
+    for (int i = 0; i < N; i++)
+        if (box[row][i] == num)
+            return false;
+
+    for (int i = 0; i < N; i++)
+        if (box[i][col] == num)
+            return false;
+
+    int boxRowStart = row - row % 3;
+    int boxColStart = col - col % 3;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            if (box[i + boxRowStart][j + boxColStart] == num)
+                return false;
+
+    return true;
+}
+
+bool solveSudoku(int box[N][N], int row, int col) {
+    if (row == N - 1 && col == N)
+        return true;
+
+    if (col == N) {
+        row++;
+        col = 0;
+    }
+
+    if (box[row][col] != 0)
+        return solveSudoku(box, row, col + 1);
+
+    for (int num = 1; num <= 9; num++) {
+        if (isSafe(box, row, col, num)) {
+            box[row][col] = num;
+
+            if (solveSudoku(box, row, col + 1))
+                return true;
+
+            box[row][col] = 0;
+        }
+    }
+    return false;
+}
+
+void printBox(int grid[N][N]) {
+    // Clear screen using a platform-independent method
+    // On Windows you might use system("cls");
+    // On Unix-based systems you might use system("clear");
+
+    // Comment out or use appropriate clear screen command based on your system
+    // system("clear");
+
+    cout << "\t\t\t****************************\n";
+    cout << "\t\t\t|                                                                                |\n";
+    cout << "\t\t\t|                                  SUDOKU.io                                     |\n";
+    cout << "\t\t\t|                                                                                |\n"; 
+    cout << "\t\t\t****************************\n"; 
+    for (int row = 0; row < N; row++) {
+        for (int col = 0; col < N; col++) {
+            if (col == 3 || col == 6)
+                cout << " | ";
+            cout << grid[row][col] <<" ";
+        }
+        if (row == 2 || row == 5) {
+            cout << endl;
+            for (int i = 0; i < N; i++)
+                cout << "---";
+        }
+        cout << endl;
+    }
+}
+
+void fillDiagonalBoxes(int box[N][N]) {
+    for (int i = 0; i < N; i += 3) {
+        vector<int> nums = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        random_shuffle(nums.begin(), nums.end());
+
+        int k = 0;
+        for (int r = i; r < i + 3; r++)
+            for (int c = i; c < i + 3; c++)
+                box[r][c] = nums[k++];
+    }
+}
+
+void generatePuzzle(int box[N][N], int numClues) {
+    fillDiagonalBoxes(box);
+    solveSudoku(box, 0, 0);
+
+    vector<pair<int, int>> cells;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            cells.push_back({i, j});
+
+    random_shuffle(cells.begin(), cells.end());
+    for (int i = 0; i < N * N - numClues; i++) {
+        int row = cells[i].first;
+        int col = cells[i].second;
+        box[row][col] = 0;
+    }
+}
+
+bool isSolvedCompletely(int grid[N][N]) {
+    for (int row = 0; row < N; row++)
+        for (int col = 0; col < N; col++)
+            if (grid[row][col] == 0)
+                return false;
+    return true;
+}
+
+void playGame(int box[N][N]) {
+    int row, col, num;
+    while (true) {
+        printBox(box);
+        cout << endl << endl;
+        cout << "Unable to solve? Enter -1 as row, col and num to view the solved sudoku." << endl;
+        cout << "Enter row (1-9): ";
+        cin >> row;
+        cout << "Enter column (1-9): ";
+        cin >> col;
+        cout << "Enter number (1-9): ";
+        cin >> num;
+
+        if (row == -1 || col == -1 || num == -1) {
+            if (solveSudoku(box, 0, 0)) {
+                printBox(box);
+                cout << "Better luck next time!!!" << endl;
+            } else {
+                cout << "No solution found" << endl;
+            }
+            exit(0); // Terminate the program after showing the solution
+        }
+
+        if (row < 1 || row > 9 || col < 1 || col > 9 || num < 1 || num > 9) {
+            cout << "Invalid input. Please enter values within the range 1-9." << endl;
+            continue;
+        }
+
+        row--;  // Adjust for 0-based indexing
+        col--;
+
+        if (!isSafe(box, row, col, num)) {
+            cout << "Invalid move. Try again." << endl;
+            continue;
+        }
+
+        box[row][col] = num;
+
+        if (isSolvedCompletely(box)) {
+            cout << "Congratulations! You have solved the puzzle." << endl;
+            printBox(box);
+            break;
+        }
+    }
+}
+
+int main() {
+    srand(time(0)); // Seed the random number generator
+
+    int box[N][N] = {0};
+
+    generatePuzzle(box, 30); // Generate a puzzle with 30 clues
+
+    cout << "\t\t\t****************************\n";
+    cout << "\t\t\t|                                                                                |\n"; 
+    cout << "\t\t\t|                                  SUDOKU.io                                     |\n";
+    cout << "\t\t\t|                                                                                |\n"; 
+    cout << "\t\t\t****************************\n"; 
+
+    while (true) {
+        int choice;
+        cout << endl << endl;
+        cout << "\t\t[1] Solve the Sudoku" << endl;
+        cout << "\t\t[2] Unable to solve? View the solved Sudoku" << endl;
+        cout << "\t\tEnter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                playGame(box);
+                break;
+            case 2:
+                if (solveSudoku(box, 0, 0)) {
+                    cout << "Completely Solved Sudoku is: "<< endl;
+                    cout << endl << endl;
+                    printBox(box);
+                    cout << "Better luck next time!!!" << endl;
+                } else {
+                    cout << "No solution found" << endl;
+                }
+                exit(0); // Terminate the program after showing the solution
+            default:
+                cout << "Invalid choice" << endl;
+        }
+    }
+    return 0;
+}
